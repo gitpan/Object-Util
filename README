@@ -1,0 +1,153 @@
+NAME
+    Object::Util - a selection of utility methods that can be called on
+    blessed objects
+
+SYNOPSIS
+       use Object::Util;
+   
+       # $foo might be undef, but this should not die
+       if ($foo->$_isa("Bar")) {
+          ...;
+       }
+
+DESCRIPTION
+    This module is inspired by Safe::Isa, Object::Tap, and my own OO
+    experiences. It is a hopefully helpful set of methods for working with
+    objects, exposed as lexical coderef variables.
+
+  Rationale
+    Providing methods as coderefs so that you can do:
+
+       $object->$_foo(@args)
+
+    ... is unusual, so probably requires some explanation.
+
+    Firstly some of these methods are designed to be called on either a
+    blessed object or some kind of unblessed reference or value. Calling a
+    method on an unblessed reference like this will croak:
+
+       $ref->foo(@args)
+
+    Ditto calling methods on undef. Coderefs don't suffer from that problem.
+
+    More importantly though, the aim of this module is that these methods
+    should be available for you to call on *any* object. You can only call
+    `$object->foo(@args)` if $object's class implements a method called `foo`,
+    or inherits from a superclass that does. Coderef methods can be called on
+    any object.
+
+    This module adopts the $_foo naming convention pioneered by modules such
+    as Safe::Isa. However (unlike Safe::Isa) the coderefs it provides are
+    *true lexical variables* (a.k.a. `my` variables), not package variables
+    (a.k.a. `our` variables).
+
+  Methods
+    $_new
+        Can be used as `$factory->$_new(@args)` to create a new object.
+
+        $factory may be a class name (the module will be auto-loaded), or may
+        be a coderef or object overloading `&{}`. If it's a class name, then
+        `$class->new(@args)` will be called; otherwise `$coderef->(@args)`
+        will be called.
+
+    $_isa
+        `$object->$_isa($class)` works like `isa` as defined in UNIVERSAL, but
+        returns `undef` if $object is undefined.
+
+        Same as Safe::Isa.
+
+    $_can
+        `$object->$_can($class)` works like `can` as defined in UNIVERSAL, but
+        returns `undef` if $object is undefined.
+
+        Same as Safe::Isa.
+
+    $_does
+        `$object->$_does($class)` works like `does` as defined in
+        Moose::Object, but returns `undef` if $object is undefined.
+
+        Same as Safe::Isa.
+
+    $_DOES
+        `$object->$_DOES($class)` works like `DOES` as defined in UNIVERSAL,
+        but returns `undef` if $object is undefined.
+
+        Same as Safe::Isa.
+
+    $_call_if_object
+        `$object->$_call_if_object($method => @args)` works like
+        `$object->$method(@args)`, but returns `undef` if $object is
+        undefined.
+
+        Same as Safe::Isa.
+
+    $_try
+        `$object->$_try($method => @args)` works like
+        `$object->$method(@args)`, but returns `undef` if any exception is
+        thrown.
+
+    $_tap
+        `$object->$_tap($method => @args)` works like
+        `$object->$method(@args)`, but returns the object itself, making it
+        useful for chaining.
+
+        Same as Object::Tap, or the `tap` method in Ruby.
+
+    $_clone
+        If the object provides a `clone` method, calls that. Or if the object
+        appears to be Moose- or Mouse-based, clones it using the metaobject
+        protocol.
+
+        Otherwise takes the naive approach of treating the object as a hashref
+        or attribute values, and creates a new object of the same class.
+
+           # clone overrides some attributes from the original object
+           my $glenda = $glen->$_clone(name => "Glenda", gender => "f");
+
+        That final fallback obviously massively breaks your class'
+        encapsulation, so it should be used sparingly.
+
+    $_with_traits
+        Calling `$class->$_with_traits(@traits)` will return a new class name
+        that does some extra traits. Should roughly support Moose, Moo, and
+        `Role::Tiny`.
+
+    $_dump
+        Calling `$object->$_dump` returns a Data::Dumper dump of the object,
+        with some useful changes to the default Data::Dumper output. (Same as
+        Data::Dumper::Concise.)
+
+  Implementation Details
+    B::Hooks::Parser is used to inject these methods into your lexical scope,
+    and `Internals::SvREADONLY` (an internal function built into the Perl
+    core) is used to make them read-only, so you can't do:
+
+       use Object::Util;
+       $_isa = sub { "something else" };
+
+    If this module detects that B::Hooks::Parser cannot be used on your
+    version of Perl, or your Perl is too old to have Internals::SvREADONLY,
+    then it has various fallback routes, but the variables it provides may end
+    up as package (`our`) variables, or not be read-only.
+
+BUGS
+    Please report any bugs to
+    <http://rt.cpan.org/Dist/Display.html?Queue=Object-Util>.
+
+SEE ALSO
+    Safe::Isa, UNIVERSAL, Object::Tap, MooseX::Clone, Data::Dumper::Concise.
+
+AUTHOR
+    Toby Inkster <tobyink@cpan.org>.
+
+COPYRIGHT AND LICENCE
+    This software is copyright (c) 2014 by Toby Inkster.
+
+    This is free software; you can redistribute it and/or modify it under the
+    same terms as the Perl 5 programming language system itself.
+
+DISCLAIMER OF WARRANTIES
+    THIS PACKAGE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED
+    WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
+    MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+
