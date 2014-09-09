@@ -112,6 +112,12 @@ DESCRIPTION
         that does some extra traits. Should roughly support Moose, Moo, and
         `Role::Tiny`.
 
+    $_extend
+        Calling `$object->$_extend(\@traits, \%methods)` will add some extra
+        roles and/or methods to an existing object.
+
+        Like Object::Extend, but with added support for roles.
+
     $_dump
         Calling `$object->$_dump` returns a Data::Dumper dump of the object,
         with some useful changes to the default Data::Dumper output. (Same as
@@ -135,7 +141,8 @@ BUGS
     <http://rt.cpan.org/Dist/Display.html?Queue=Object-Util>.
 
 SEE ALSO
-    Safe::Isa, UNIVERSAL, Object::Tap, MooseX::Clone, Data::Dumper::Concise.
+    Safe::Isa, UNIVERSAL, Object::Tap, MooseX::Clone, Data::Dumper::Concise,
+    Object::Extend.
 
 AUTHOR
     Toby Inkster <tobyink@cpan.org>.

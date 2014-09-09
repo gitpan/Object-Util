@@ -23,6 +23,10 @@ t/clone-mouse.t
 t/clone.t
 t/does.t
 t/dump.t
+t/extend-moo.t
+t/extend-moose.t
+t/extend-mouse.t
+t/extend.t
 t/isa.t
 t/new.t
 t/tap.t
