@@ -112,6 +112,26 @@ DESCRIPTION
         that does some extra traits. Should roughly support Moose, Moo, and
         `Role::Tiny`.
 
+        If $class is actually a (factory) coderef, then this will only
+        *partly* work. Example:
+
+           my $factory  = sub { Foo->new(@_) };
+           my $instance = $factory->$_with_traits("Bar")->$_new(%args);
+
+        The object $instance should now be a `Foo` object, and should do the
+        `Bar` role, however if `Bar` defines any *attributes*, then $_new will
+        not have initialized them correctly. This is because of the opacity of
+        the $factory: $_with_traits cannot peek inside it and apply traits to
+        the `Foo` class; instead it needs to build $instance and apply the
+        traits to the already-built object. Therefore any behaviour that `Bar`
+        defines for the constructor will have been ignored.
+
+        It is sometimes possible to work around this issue using:
+
+           my $factory  = sub { Foo->new(@_) };
+           my $instance = $factory->$_with_traits("Bar")->$_new(%args);
+           $instance = $instance->$_clone(%args);
+
     $_extend
         Calling `$object->$_extend(\@traits, \%methods)` will add some extra
         roles and/or methods to an existing object.
@@ -122,6 +142,9 @@ DESCRIPTION
         Calling `$object->$_dump` returns a Data::Dumper dump of the object,
         with some useful changes to the default Data::Dumper output. (Same as
         Data::Dumper::Concise.)
+
+        If the object provides its own `dump` method, this will be called
+        instead.
 
   Implementation Details
     B::Hooks::Parser is used to inject these methods into your lexical scope,

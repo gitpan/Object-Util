@@ -26,6 +26,7 @@ Files: README
  t/with_traits-moose.t
  t/with_traits-mouse.t
  t/with_traits.t
+ t/zz_combined_traits_new.t
 Copyright: This software is copyright (c) 2014 by Toby Inkster.
 License: GPL-1.0+ or Artistic-1.0
 

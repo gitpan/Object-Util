@@ -34,3 +34,4 @@ t/try.t
 t/with_traits-moose.t
 t/with_traits-mouse.t
 t/with_traits.t
+t/zz_combined_traits_new.t

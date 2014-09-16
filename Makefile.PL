@@ -7,7 +7,7 @@ my $meta = {
   "abstract"       => "a selection of utility methods that can be called on blessed objects",
   "author"         => ["Toby Inkster (TOBYINK) <tobyink\@cpan.org>"],
   "dynamic_config" => 1,
-  "generated_by"   => "Dist::Inkt::Profile::TOBYINK version 0.016, CPAN::Meta::Converter version 2.140640",
+  "generated_by"   => "Dist::Inkt::Profile::TOBYINK version 0.021, CPAN::Meta::Converter version 2.140640",
   "keywords"       => [],
   "license"        => ["perl_5"],
   "meta-spec"      => {
@@ -24,6 +24,7 @@ my $meta = {
                                          "List::Util"         => 1.29,
                                          "Module::Runtime"    => 0,
                                          "MooX::Traits::Util" => 0,
+                                         "perl"               => "5.006000",
                                          "Role::Tiny"         => 0,
                                          "Scalar::Util"       => 1.23,
                                        },
@@ -41,7 +42,7 @@ my $meta = {
                                      },
                       },
   "provides"       => {
-                        "Object::Util" => { file => "lib/Object/Util.pm", version => 0.002 },
+                        "Object::Util" => { file => "lib/Object/Util.pm", version => 0.003 },
                       },
   "release_status" => "stable",
   "resources"      => {
@@ -53,9 +54,9 @@ my $meta = {
                                           url  => "git://github.com/tobyink/p5-object-util.git",
                                           web  => "https://github.com/tobyink/p5-object-util",
                                         },
-                        X_identifier => "http://purl.org/NET/cpan-uri/dist/Object-Util/project",
+                        x_identifier => "http://purl.org/NET/cpan-uri/dist/Object-Util/project",
                       },
-  "version"        => 0.002,
+  "version"        => 0.003,
 };
 
 my %dynamic_config;
