@@ -98,9 +98,14 @@ DESCRIPTION
         Calling `$object->$_extend(\@traits, \%methods)` will add some extra
         roles and/or methods to an existing object.
 
-        Either @traits or %methods may be omitted. For example,
-        `$object->$_extends(\@traits)` or `$object->$_extends(\%methods)`.
-        `$object->$_extends()` also works fine, and is a no-op.
+        Either @traits or %methods may be omitted. That is,
+        `$object->$_extend(\@traits)` will add some traits to an existing
+        object but no new methods, and `$object->$_extend(\%methods)` will add
+        new methods, but no traits. `$object->$_extend()` also works fine, and
+        is a no-op.
+
+        This method always returns $object, which makes it suitable for
+        chaining.
 
         Like Object::Extend, but with added support for roles.
 

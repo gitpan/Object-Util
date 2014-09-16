@@ -7,7 +7,7 @@ BEGIN { if ($] < 5.010000) { require UNIVERSAL::DOES } };
 package Object::Util;
 
 our $AUTHORITY = 'cpan:TOBYINK';
-our $VERSION   = '0.005';
+our $VERSION   = '0.006';
 
 use Carp                         qw( carp croak );
 use List::Util       1.29        qw( pairkeys pairvalues );
@@ -518,10 +518,14 @@ It is sometimes possible to work around this issue using:
 Calling C<< $object->$_extend(\@traits, \%methods) >> will add some
 extra roles and/or methods to an existing object.
 
-Either C<< @traits >> or C<< %methods >> may be omitted. For example,
-C<< $object->$_extends(\@traits) >> or
-C<< $object->$_extends(\%methods) >>. C<< $object->$_extends() >> also
+Either C<< @traits >> or C<< %methods >> may be omitted. That is,
+C<< $object->$_extend(\@traits) >> will add some traits to an existing
+object but no new methods, and C<< $object->$_extend(\%methods) >>
+will add new methods, but no traits. C<< $object->$_extend() >> also
 works fine, and is a no-op.
+
+This method always returns C<< $object >>, which makes it suitable for
+chaining.
 
 Like L<Object::Extend>, but with added support for roles.
 
