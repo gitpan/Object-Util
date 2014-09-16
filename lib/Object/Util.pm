@@ -7,14 +7,10 @@ BEGIN { if ($] < 5.010000) { require UNIVERSAL::DOES } };
 package Object::Util;
 
 our $AUTHORITY = 'cpan:TOBYINK';
-our $VERSION   = '0.004';
+our $VERSION   = '0.005';
 
-use B                            qw( perlstring );
-use Carp                         qw( croak );
+use Carp                         qw( carp croak );
 use List::Util       1.29        qw( pairkeys pairvalues );
-use Module::Runtime              qw( use_module use_package_optimistically );
-use MooX::Traits::Util;
-use Role::Tiny;
 use Scalar::Util     1.23        qw( blessed reftype );
 
 my $anon_class_id = 0;
@@ -54,7 +50,8 @@ sub _new :method
 	}
 	else
 	{
-		use_package_optimistically($class);
+		require Module::Runtime;
+		Module::Runtime::use_package_optimistically($class);
 		croak "Class $class does not provide a constructor called 'new'"
 			unless $class->can("new");
 	}
@@ -368,14 +365,24 @@ sub setup_for :method
 sub import :method
 {
 	my $me = shift;
+	my (%args) = @_;
 	my ($caller, $file) = caller;
 	
-	if ($file ne '-e' and eval { require B::Hooks::Parser })
+	$args{magic} = "auto" unless defined $args{magic};
+	
+	if ($file ne '-e'
+	and $args{magic}
+	and eval { require B::Hooks::Parser })
 	{
 		my $varlist = join ',', $me->sub_names;
 		my $reflist = join ',', map "\\$_", $me->sub_names;
 		B::Hooks::Parser::inject(";my($varlist);$me\->setup_for($reflist);");
 		return;
+	}
+	
+	if ($args{magic} and $args{magic} ne "auto")
+	{
+		carp "Object::Util could not use magic; continuing regardless";
 	}
 	
 	my %subs = $me->subs;
@@ -447,75 +454,21 @@ not package variables (a.k.a. C<our> variables).
 
 =head2 Methods
 
+=head3 Object construction and manipulation
+
 =over
 
 =item C<< $_new >>
 
-Can be used as C<< $factory->$_new(@args) >> to create a new object.
+Can be used like C<< $class->$_new(@args) >> to create a new object.
+Object::Util will use L<Module::Runtime> to I<< attempt >> to load
+C<< $class >> if it is not already loaded. C<< $class >> is expected
+to provide a method called C<new>.
 
-C<< $factory >> may be a class name (the module will be auto-loaded),
-or may be a coderef or object overloading C<< &{} >>. If it's a class
-name, then C<< $class->new(@args) >> will be called; otherwise
-C<< $coderef->(@args) >> will be called.
-
-=item C<< $_isa >>
-
-C<< $object->$_isa($class) >> works like C<isa> as defined in
-L<UNIVERSAL>, but returns C<undef> if C<< $object >> is undefined.
-
-Same as L<Safe::Isa>.
-
-=item C<< $_can >>
-
-C<< $object->$_can($method) >> works like C<can> as defined in
-L<UNIVERSAL>, but returns C<undef> if C<< $object >> is undefined.
-
-Similar to L<Safe::Isa>, but also returns true if C<$method> is an
-unblessed coderef. (The behaviour of C<$method> if it is a blessed
-object -- particularly in the face of overloading -- can be
-unintuitive, so is not supported by C<< $_can >>.)
-
-=item C<< $_does >>
-
-C<< $object->$_does($role) >> works like C<does> as defined in
-L<Moose::Object>, but returns C<undef> if C<< $object >> is undefined.
-
-Same as L<Safe::Isa>.
-
-=item C<< $_DOES >>
-
-C<< $object->$_DOES($role) >> works like C<DOES> as defined in
-L<UNIVERSAL>, but returns C<undef> if C<< $object >> is undefined.
-
-Same as L<Safe::Isa>.
-
-=item C<< $_call_if_object >>
-
-C<< $object->$_call_if_object($method => @args) >> works like
-C<< $object->$method(@args) >>, but returns C<undef> if C<< $object >>
-is undefined.
-
-C<< $method >> may be a method name, or a coderef (anonymous method).
-
-Same as L<Safe::Isa>.
-
-=item C<< $_try >>
-
-C<< $object->$_try($method => @args) >> works like
-C<< $object->$method(@args) >>, but returns C<undef> if I<any>
-exception is thrown.
-
-C<< $method >> may be a method name, or a coderef (anonymous method).
-
-=item C<< $_tap >>
-
-C<< $object->$_tap($method => @args) >> works like
-C<< $object->$method(@args) >>, but returns the object itself, making
-it useful for chaining.
-
-C<< $method >> may be a method name, or a coderef (anonymous method).
-
-Same as L<Object::Tap>, or the C<tap> method in Ruby.
+Can also be used as C<< $factory->$_new(@args) >> to create a new
+object, where C<< $factory >> is a coderef or an object overloading
+C<< &{} >>. In this case, C<< $_new >> will simply call
+C<< $factory->(@args) >> and expect that to return an object.
 
 =item C<< $_clone >>
 
@@ -524,7 +477,7 @@ appears to be Moose- or Mouse-based, clones it using the metaobject
 protocol.
 
 Otherwise takes the naive approach of treating the object as a hashref
-or attribute values, and creates a new object of the same class.
+of attribute values, and creates a new object of the same class.
 
    # clone overrides some attributes from the original object
    my $glenda = $glen->$_clone(name => "Glenda", gender => "f");
@@ -536,7 +489,8 @@ encapsulation, so it should be used sparingly.
 
 Calling C<< $class->$_with_traits(@traits) >> will return a new class
 name that does some extra traits. Should roughly support L<Moose>,
-L<Moo>, and C<Role::Tiny>.
+L<Mouse>, L<Moo>, and L<Role::Tiny>, though combinations of frameworks
+(e.g. consuming a Moose role in a Mouse class) will not always work.
 
 If C<< $class >> is actually a (factory) coderef, then this will only
 I<partly> work. Example:
@@ -564,7 +518,97 @@ It is sometimes possible to work around this issue using:
 Calling C<< $object->$_extend(\@traits, \%methods) >> will add some
 extra roles and/or methods to an existing object.
 
+Either C<< @traits >> or C<< %methods >> may be omitted. For example,
+C<< $object->$_extends(\@traits) >> or
+C<< $object->$_extends(\%methods) >>. C<< $object->$_extends() >> also
+works fine, and is a no-op.
+
 Like L<Object::Extend>, but with added support for roles.
+
+=back
+
+=head3 Method call modifiers
+
+=over
+
+=item C<< $_call_if_object >>
+
+C<< $object->$_call_if_object($method => @args) >> works like
+C<< $object->$method(@args) >>, but if C<< $object >> is undefined,
+returns C<undef> instead of throwing an exception.
+
+C<< $method >> may be a method name, or a coderef (anonymous method).
+
+Same as L<Safe::Isa>.
+
+=item C<< $_try >>
+
+C<< $object->$_try($method => @args) >> works like
+C<< $object->$method(@args) >>, but if I<< any exception is thrown >>
+returns C<undef> instead.
+
+C<< $method >> may be a method name, or a coderef (anonymous method).
+
+=item C<< $_tap >>
+
+C<< $object->$_tap($method => @args) >> works like
+C<< $object->$method(@args) >>, but discards the method's return value
+(indeed it calls the method in void context), and instead returns the
+object itself, making it useful for chaining.
+
+C<< $method >> may be a method name, or a coderef (anonymous method).
+
+Same as L<Object::Tap>, or the C<tap> method in Ruby.
+
+=item C<< $_isa >>
+
+C<< $object->$_isa($class) >> works like C<isa> as defined in
+L<UNIVERSAL>, but if C<< $object >> is undefined, returns false
+instead of throwing an exception.
+
+A shortcut for C<< $object->$_call_if_method(isa => $class) >>.
+
+Same as L<Safe::Isa>.
+
+=item C<< $_does >>
+
+C<< $object->$_does($role) >> works like C<does> as defined in
+L<Moose::Object>, but if C<< $object >> is undefined, returns false
+instead of throwing an exception.
+
+A shortcut for C<< $object->$_call_if_method(does => $role) >>.
+
+Same as L<Safe::Isa>.
+
+=item C<< $_DOES >>
+
+C<< $object->$_DOES($role) >> works like C<DOES> as defined in
+L<UNIVERSAL>, but if C<< $object >> is undefined, returns false
+instead of throwing an exception.
+
+A shortcut for C<< $object->$_call_if_method(DOES => $role) >>.
+
+Same as L<Safe::Isa>.
+
+=item C<< $_can >>
+
+C<< $object->$_can($method) >> works like C<can> as defined in
+L<UNIVERSAL>, but if C<< $object >> is undefined, returns C<undef>
+instead of throwing an exception.
+
+There is one other significant deviation from the behaviour of
+UNIVERSAL's C<can> method: C<< $_can >> also returns true if
+C<$method> is an unblessed coderef. (The behaviour of C<$method> if it
+is a blessed object -- particularly in the face of overloading -- can
+be unintuitive, so is not supported by C<< $_can >>.)
+
+Similar to L<Safe::Isa>, but not quite the same.
+
+=back
+
+=head3 Object utility methods
+
+=over
 
 =item C<< $_dump >>
 
@@ -591,6 +635,11 @@ If this module detects that B::Hooks::Parser cannot be used on your
 version of Perl, or your Perl is too old to have Internals::SvREADONLY,
 then it has various fallback routes, but the variables it provides may
 end up as package (C<our>) variables, or not be read-only.
+
+If the magic works on your version of Perl, but you wish to avoid the
+magic anyway, you can switch it off:
+
+   use Object::Util magic => 0;
 
 =head1 BUGS
 
