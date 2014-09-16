@@ -57,19 +57,22 @@ DESCRIPTION
         Same as Safe::Isa.
 
     $_can
-        `$object->$_can($class)` works like `can` as defined in UNIVERSAL, but
-        returns `undef` if $object is undefined.
+        `$object->$_can($method)` works like `can` as defined in UNIVERSAL,
+        but returns `undef` if $object is undefined.
 
-        Same as Safe::Isa.
+        Similar to Safe::Isa, but also returns true if $method is an unblessed
+        coderef. (The behaviour of $method if it is a blessed object --
+        particularly in the face of overloading -- can be unintuitive, so is
+        not supported by $_can.)
 
     $_does
-        `$object->$_does($class)` works like `does` as defined in
+        `$object->$_does($role)` works like `does` as defined in
         Moose::Object, but returns `undef` if $object is undefined.
 
         Same as Safe::Isa.
 
     $_DOES
-        `$object->$_DOES($class)` works like `DOES` as defined in UNIVERSAL,
+        `$object->$_DOES($role)` works like `DOES` as defined in UNIVERSAL,
         but returns `undef` if $object is undefined.
 
         Same as Safe::Isa.
@@ -79,17 +82,23 @@ DESCRIPTION
         `$object->$method(@args)`, but returns `undef` if $object is
         undefined.
 
+        $method may be a method name, or a coderef (anonymous method).
+
         Same as Safe::Isa.
 
     $_try
         `$object->$_try($method => @args)` works like
-        `$object->$method(@args)`, but returns `undef` if any exception is
+        `$object->$method(@args)`, but returns `undef` if *any* exception is
         thrown.
+
+        $method may be a method name, or a coderef (anonymous method).
 
     $_tap
         `$object->$_tap($method => @args)` works like
         `$object->$method(@args)`, but returns the object itself, making it
         useful for chaining.
+
+        $method may be a method name, or a coderef (anonymous method).
 
         Same as Object::Tap, or the `tap` method in Ruby.
 
